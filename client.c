@@ -1,36 +1,57 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include <sys/un.h>
+#include <unistd.h>
 
-#define PORT 8080
+#define SOCKET_PATH "./test.sock"
+#define BUFFER_SIZE 1024
+
+void init_msg() {
+  printf("Connecting to UNIX domain socket host @ %s...\n", SOCKET_PATH);
+}
+
+void inform_and_panic(const char *msg) {
+  // Be absolutely certain no syscalls happen in between here!
+  perror(msg);
+  printf("Aborting!");
+  exit(EXIT_FAILURE);
+}
 
 int main() {
-    int sockfd;
-    struct sockaddr_in servaddr;
-    socklen_t clilen;
-    char buffer[1024];
+  int client_fd;
+  struct sockaddr_un server_addr;
+  char buffer[BUFFER_SIZE];
 
-    // Create a socket
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  init_msg();
 
-    // Set address of server
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    servaddr.sin_port = htons(PORT);
+  // Create socket
+  client_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (client_fd == -1) {
+    inform_and_panic("PANIC: socket not created, missing file descriptor.\n");
+  }
 
-    // Connect to server
-    connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
+  // Set up server address
+  memset(&server_addr, 0, sizeof(struct sockaddr_un));
+  server_addr.sun_family = AF_UNIX;
+  strncpy(server_addr.sun_path, SOCKET_PATH, sizeof(server_addr.sun_path) - 1);
 
-    printf("Client connected to server...\n");
+  // Connect to server
+  if (connect(client_fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr_un)) == -1) {
+    inform_and_panic("PANIC: unable to connect to server.");
+  }
 
-    // Receive and log random numbers from server
-    while (1) {
-        recv(sockfd, buffer, sizeof(buffer), 0);
-        printf("Random number from server: %c\n", buffer[0]);
-    }
+  // Receive data from server and echo back to standard out
+  while (1) {
+      int bytes_read = read(client_fd, buffer, BUFFER_SIZE);
+      if (bytes_read == -1) {
+          inform_and_panic("PANIC: unable to read from server.");
+      }
+      write(STDOUT_FILENO, buffer, bytes_read);
+  }
 
-    return 0;
+  // Close socket
+  close(client_fd);
+
+  return 0;
 }

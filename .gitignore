@@ -1,3 +1,4 @@
 host
 client
 test.sock
+*.o
