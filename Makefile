@@ -9,8 +9,8 @@ all: $(EXE_HOST) $(EXE_CLIENT)
 $(LIB_CONNCT): uconnect.c uconnect.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(EXE_CLIENT): client.c
-	$(CC) $(CFLAGS) -o $@ $<
+$(EXE_CLIENT): client.c $(LIB_CONNCT)
+	$(CC) $(CFLAGS) -o $@ $< $(LIB_CONNCT)
 
 $(EXE_HOST): host.c $(LIB_CONNCT)
 	$(CC) $(CFLAGS) -o $@ $< $(LIB_CONNCT)

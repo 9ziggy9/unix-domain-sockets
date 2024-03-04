@@ -1,29 +1,16 @@
+#include "uconnect.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <unistd.h>
 
 #define SOCKET_PATH "./test.sock"
-#define BUFFER_SIZE 1024
-
-void init_msg() {
-  printf("Connecting to UNIX domain socket host @ %s...\n", SOCKET_PATH);
-}
-
-void inform_and_panic(const char *msg) {
-  // Be absolutely certain no syscalls happen in between here!
-  perror(msg);
-  printf("Aborting!");
-  exit(EXIT_FAILURE);
-}
 
 int main() {
   int client_fd;
-  struct sockaddr_un server_addr;
+  struct sockaddr_un host_addr;
   char buffer[BUFFER_SIZE];
 
-  init_msg();
+  init_msg("client", SOCKET_PATH);
 
   // Create socket
   client_fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -31,23 +18,17 @@ int main() {
     inform_and_panic("PANIC: socket not created, missing file descriptor.\n");
   }
 
-  // Set up server address
-  memset(&server_addr, 0, sizeof(struct sockaddr_un));
-  server_addr.sun_family = AF_UNIX;
-  strncpy(server_addr.sun_path, SOCKET_PATH, sizeof(server_addr.sun_path) - 1);
+  setup_host_address(&host_addr, SOCKET_PATH);
 
-  // Connect to server
-  if (connect(client_fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr_un)) == -1) {
-    inform_and_panic("PANIC: unable to connect to server.");
-  }
+  connect_to_host(client_fd, &host_addr);
 
   // Receive data from server and echo back to standard out
   while (1) {
-      int bytes_read = read(client_fd, buffer, BUFFER_SIZE);
+      ssize_t bytes_read = read(client_fd, buffer, BUFFER_SIZE);
       if (bytes_read == -1) {
           inform_and_panic("PANIC: unable to read from server.");
       }
-      write(STDOUT_FILENO, buffer, bytes_read);
+      write(STDOUT_FILENO, buffer, (size_t) bytes_read);
   }
 
   // Close socket
