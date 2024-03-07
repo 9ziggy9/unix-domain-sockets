@@ -3,6 +3,7 @@ CFLAGS=-Wall -Wextra -pedantic -Wconversion -Wunreachable-code -Wswitch-enum
 EXE_HOST=host
 EXE_CLIENT=client
 LIB_CONNCT=./uconnect.o
+BINS =./host ./client ./mem_pool_host ./mem_pool_client ./opts ./mem_pool
 
 all: $(EXE_HOST) $(EXE_CLIENT)
 
@@ -34,4 +35,4 @@ opts: opts.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -rf $(EXE_HOST) $(EXE_CLIENT) $(LIB_CONNCT)
+	rm -rf $(EXE_HOST) $(EXE_CLIENT) $(BINS) $(LIB_CONNCT)
