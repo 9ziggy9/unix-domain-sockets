@@ -2,3 +2,5 @@ host
 client
 test.sock
 *.o
+mem_pool_client
+mem_pool_host

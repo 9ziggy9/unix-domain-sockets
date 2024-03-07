@@ -3,6 +3,7 @@
 #include <unistd.h>   // For ftruncate
 #include <stdio.h>    // For printf/puts
 #include <stdlib.h>   // For EXIT_FAILURE
+#include <semaphore.h>
 #include <string.h>
 #include <signal.h>
 
@@ -11,8 +12,10 @@ static void *M_LOC = NULL;
 static int SHM_FD = -1;
 static const size_t MEM_SIZE = 4096;
 static const char *POOL_NAME = "/mem_pool";
+/* static const char *SEM_NAME  = "/mem_sem" */ //todo
 
 void handle_sigint(int sig) {
+  // You should check for SIG_ERR
   printf("\n");
   printf("Received signal: %d. Unmapping shared memory and cleaning...", sig);
   if (M_LOC != NULL) {
@@ -34,6 +37,7 @@ void inform_and_panic(char *source) {
 
 void broadcast_ran_num(char *origin) {
   while (1) {
+    // Handle potential overflows
     sprintf(M_LOC, "%s: %d\n", origin, (rand() % 10) + 1);
     sleep(1);
   }
@@ -49,9 +53,9 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
 
-  char hostname[SZ_ARG_BUFFER];
-  strncpy(hostname, argv[1], SZ_ARG_BUFFER);
-  hostname[SZ_ARG_BUFFER] = '\0';
+  char originator[SZ_ARG_BUFFER];
+  strncpy(originator, argv[1], SZ_ARG_BUFFER);
+  originator[SZ_ARG_BUFFER] = '\0';
 
   SHM_FD = shm_open(POOL_NAME, O_CREAT | O_RDWR, 0666);
   if (SHM_FD == -1) inform_and_panic("shm_open");
@@ -61,7 +65,7 @@ int main(int argc, char **argv) {
   M_LOC = mmap(0, MEM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, SHM_FD, 0);
   if (M_LOC == MAP_FAILED) inform_and_panic("mmap");
 
-  broadcast_ran_num(hostname);
+  broadcast_ran_num(originator);
 
   exit(EXIT_SUCCESS); // unreachable BTW.
 }

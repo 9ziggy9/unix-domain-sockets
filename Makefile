@@ -6,7 +6,12 @@ LIB_CONNCT=./uconnect.o
 
 all: $(EXE_HOST) $(EXE_CLIENT)
 
-mem_pool: mem_pool_host.c
+mem_pool: mem_pool_host mem_pool_client
+
+mem_pool_host: mem_pool_host.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+mem_pool_client: mem_pool_client.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 $(LIB_CONNCT): uconnect.c uconnect.h
