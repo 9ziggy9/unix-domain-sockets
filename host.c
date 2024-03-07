@@ -2,15 +2,26 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
 
 #define SOCKET_PATH "./test.sock"
+#define IN_BUFFER_SIZE 256
 
-int main() {
+int main(int argc, char **argv) {
   int host_fd, client_fd;
   struct sockaddr_un host_addr;
   char buffer[BUFFER_SIZE];
+  char hostname[IN_BUFFER_SIZE];
 
-  init_msg("host", SOCKET_PATH);
+  if (argc < 2) {
+    fprintf(stderr, "Please provide hostname as argument.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  strncpy(hostname, argv[1], IN_BUFFER_SIZE);
+  hostname[IN_BUFFER_SIZE - 1] = '\0';
+
+  init_msg(hostname, SOCKET_PATH);
 
   // Create socket
   host_fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -32,7 +43,7 @@ int main() {
   // Emit a random number between 1 and 10 every second
   while (1) {
       int number = (rand() % 10) + 1;
-      snprintf(buffer, BUFFER_SIZE, "%d\n", number + '0');
+      snprintf(buffer, BUFFER_SIZE, "%s: %d\n", hostname, number);
       write(client_fd, buffer, strlen(buffer));
       sleep(1);
   }

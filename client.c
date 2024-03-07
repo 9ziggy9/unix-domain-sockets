@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
 
 #define SOCKET_PATH "./test.sock"
 
@@ -22,9 +24,16 @@ int main() {
 
   connect_to_host(client_fd, &host_addr);
 
-  // Receive data from server and echo back to standard out
+  int flags = fcntl(client_fd, F_GETFL, 0);
+  fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
+
   while (1) {
       ssize_t bytes_read = read(client_fd, buffer, BUFFER_SIZE);
+      if (bytes_read == -1 && errno == EAGAIN) {
+          // No data available, sleep for a bit and try again
+          sleep(1);
+          continue;
+      }
       if (bytes_read == -1) {
           inform_and_panic("PANIC: unable to read from server.");
       }
